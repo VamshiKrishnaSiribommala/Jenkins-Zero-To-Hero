@@ -1,10 +1,10 @@
 pipeline {
   agent {
-  docker {
-    image 'vamshikrishnasiribommala/jenkins-maven-docker'
-    args '-v /var/run/docker.sock:/var/run/docker.sock'
+    docker {
+      image 'vamshikrishnasiribommala/jenkins-maven-docker'
+      args '-v /var/run/docker.sock:/var/run/docker.sock'
+    }
   }
-}
 
   stages {
 
@@ -43,21 +43,22 @@ pipeline {
       steps {
         sh '''
         cd java-maven-sonar-argocd-helm-k8s/spring-boot-app
-        docker build -t abhishekf5/ultimate-cicd:${BUILD_NUMBER} .
+        docker build -t vamshikrishnasiribommala/ultimate-cicd:${BUILD_NUMBER} .
         '''
       }
     }
 
-stage('Push Docker Image') {
-    steps {
-        withCredentials([usernamePassword(credentialsId: 'docker-cred', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
-            sh '''
-            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-            docker push abhishekf5/ultimate-cicd:${BUILD_NUMBER}
-            '''
+    stage('Push Docker Image') {
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'docker-cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+          sh '''
+          export HOME=/var/lib/jenkins
+          echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+          docker push vamshikrishnasiribommala/ultimate-cicd:${BUILD_NUMBER}
+          '''
         }
+      }
     }
-}
 
     stage('Update Deployment File') {
       steps {
@@ -69,7 +70,7 @@ stage('Push Docker Image') {
           sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
 
           git add .
-          git commit -m "Update image tag ${BUILD_NUMBER}"
+          git commit -m "Update image tag ${BUILD_NUMBER}" || true
 
           git push https://${GITHUB_TOKEN}@github.com/VamshiKrishnaSiribommala/Jenkins-Zero-To-Hero.git HEAD:main
           '''
@@ -78,3 +79,5 @@ stage('Push Docker Image') {
     }
 
   }
+
+}
