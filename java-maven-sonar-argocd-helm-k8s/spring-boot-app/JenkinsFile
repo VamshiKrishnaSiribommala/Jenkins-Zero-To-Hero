@@ -48,16 +48,14 @@ pipeline {
       }
     }
 
-    stage('Push Docker Image') {
-      steps {
-        withCredentials([usernamePassword(credentialsId: 'docker-cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-          sh '''
-          docker login -u $DOCKER_USER -p $DOCKER_PASS
-          docker push abhishekf5/ultimate-cicd:${BUILD_NUMBER}
-          '''
+stage('Push Docker Image') {
+    steps {
+        withCredentials([usernamePassword(credentialsId: 'docker-cred', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
+            sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
+            sh "docker push abhishekf5/ultimate-cicd:${BUILD_NUMBER}"
         }
-      }
     }
+}
 
     stage('Update Deployment File') {
       steps {
